@@ -134,7 +134,8 @@ export function createLocalStore(storage = safeStorage()) {
         },
         addComment(ref, { text, author }) {
             const body = cleanText(text, LIMITS.comment);
-            if (!body || !findNote(data, ref)) return null;
+            const target = findNote(data, ref);
+            if (!body || !target || (target.comments?.length ?? 0) >= LIMITS.commentsPerNote) return null;
             const comment = { id: uid(), text: body, author: cleanText(author, LIMITS.author), ts: Date.now() };
             update(s => {
                 const note = findNote(s, ref);

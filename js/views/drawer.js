@@ -5,7 +5,7 @@ import { $, h } from '../lib/dom.js';
 import { byline, fullTime } from '../lib/time.js';
 import { trapTab } from '../lib/focus.js';
 import { savedAuthor, rememberAuthor } from '../lib/prefs.js';
-import { COLUMNS, findBlock, findNote } from '../domain.js';
+import { COLUMNS, LIMITS, findBlock, findNote } from '../domain.js';
 import { store, auth, ui } from '../context.js';
 
 export function openNote(ref, opener) {
@@ -60,6 +60,12 @@ function renderDrawer() {
     const column = COLUMNS.find(c => c.id === ui.open.colId);
     const editing = auth.isEditor();
 
+    // Bir nota en çok LIMITS.commentsPerNote yorum yazılabilir (kural da aynı sınırı uygular).
+    const full = ui.comments.length >= LIMITS.commentsPerNote;
+    $('commentInput').disabled = full;
+    $('commentInput').placeholder = full ? 'Bu not için yorum sınırına ulaşıldı' : '';
+    $('commentForm').querySelector('button[type=submit]').disabled = full;
+
     $('drawerCtx').textContent = `${week.title} · ${column.title}`;
     $('drawerBody').replaceChildren(
         h('div', {},
@@ -98,9 +104,11 @@ export function initDrawer() {
         const text = $('commentInput').value.trim();
         if (!text || !ui.open) return;
         const author = $('commentAuthor').value.trim();
-        rememberAuthor(author);
-        $('commentInput').value = '';
-        store.addComment(ui.open, { text, author });
+        const id = store.addComment(ui.open, { text, author });
+        if (id !== null) {   // reddedildiyse (ör. çok hızlı yazıldı) yazılan yorum kaybolmasın
+            rememberAuthor(author);
+            $('commentInput').value = '';
+        }
         $('commentInput').focus();
     });
     $('drawerClose').addEventListener('click', closeNote);

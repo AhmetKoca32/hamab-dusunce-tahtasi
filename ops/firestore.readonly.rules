@@ -1,0 +1,22 @@
+rules_version = '2';
+
+// ACİL DURUM KİLİDİ: SALT OKUNUR.
+//
+// Herkes notları ve yorumları OKUYABİLİR ama kimse (düzenleyici dahil) hiçbir şey YAZAMAZ. Yazma kotasını
+// tüketen bir saldırı ya da hata sırasında siteyi ayakta tutarken zararı durdurur.
+//
+// Açmak için: npm run lockdown:readonly   Geri almak için: npm run unlock
+// (docs/firebase-kurulum.md, "Kota koruması")
+//
+// Not: `admins` koleksiyonu burada bilerek yok, o yüzden okunamaz (varsayılan: reddet).
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    match /terms/{id} { allow read: if true; }
+    match /blocks/{id} { allow read: if true; }
+    match /notes/{noteId} {
+      allow read: if true;
+      match /comments/{commentId} { allow read: if true; }
+    }
+  }
+}

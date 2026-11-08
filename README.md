@@ -112,9 +112,24 @@ Statik site, derleme adımı yok:
 Proje adı repo adını izler: `hamab-dusunce-tahtasi` → `hamab-dusunce-tahtasi.vercel.app`. Yayından sonra bu
 alanı Firebase'de **Authorized domains** listesine ekle ([kurulum, adım 7](docs/firebase-kurulum.md)).
 
+## Kota ve kötüye kullanım koruması
+
+Ücretsiz Spark planı günlük sınırlıdır; aşılırsa ücret çıkmaz ama o gün işlemler reddedilir. Meşru kullanım için
+okuma düşük tutulur (yalnızca seçili dönem dinlenir, yorumlar panel açılınca yüklenir). Sunucu kuralları biçimi
+doğrular ve not başına en çok 200 yorum yazılmasına izin verir; tarayıcı dakikada en çok 8 yazıma izin verir (kaza
+önlemi). **Kasıtlı kota saldırısına karşı asıl savunma App Check'tir** ve henüz açık değil, kod hazır, adımlar
+[docs/firebase-kurulum.md](docs/firebase-kurulum.md#kota-koruması-spark-planı)'nda. Acil durumda:
+
+```bash
+npm run lockdown:readonly   # herkes okur, kimse yazamaz
+npm run lockdown:closed     # kimse okuyamaz ya da yazamaz
+npm run unlock              # normal kurallara dön
+```
+
 ## Yapılacaklar
 
 - [ ] Firebase projesini bağla ve doğrula ([kontrol listesi](docs/firebase-kurulum.md))
 - [ ] Fraunces fontunu siteye gömmek (`assets/fonts/`, Latin + Latin-Extended)
 - [ ] Haftalık kaynaklar için Drive bağlantısı alanı (ücretsiz çözüm)
-- [ ] İsteğe bağlı: App Check (hız sınırı), karanlık mod (renkler zaten CSS değişkeni)
+- [ ] App Check'i aç (reCAPTCHA v3 anahtarı gerekir, adımlar kurulum belgesinde)
+- [ ] İsteğe bağlı: karanlık mod (renkler zaten CSS değişkeni)

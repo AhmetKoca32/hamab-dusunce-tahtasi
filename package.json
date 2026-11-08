@@ -6,7 +6,10 @@
   "type": "module",
   "scripts": {
     "start": "python3 -m http.server 8765 --bind 127.0.0.1",
-    "test": "node --test"
+    "test": "node --test",
+    "lockdown:readonly": "firebase deploy --only firestore:rules --config ops/firebase.readonly.json --project hamab-dusunce-tahtasi",
+    "lockdown:closed": "firebase deploy --only firestore:rules --config ops/firebase.closed.json --project hamab-dusunce-tahtasi",
+    "unlock": "firebase deploy --only firestore:rules --project hamab-dusunce-tahtasi"
   },
   "engines": {
     "node": ">=20"

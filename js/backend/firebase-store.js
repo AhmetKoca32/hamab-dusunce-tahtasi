@@ -17,8 +17,11 @@ import {
 } from './firebase-sdk.js';
 import { assembleState, nextOrder, orderBetween } from './assemble.js';
 import { COLUMNS, WEEKS_PER_TERM, LIMITS, cleanText } from '../domain.js';
+import { createRateLimiter } from '../lib/rate-limit.js';
 
 const BATCH_LIMIT = 400;
+// Bu tarayıcıdan dakikada en çok 8 not/yorum: hatalı döngü ve çift tıklamaya karşı kaza önlemi (güvenlik değil).
+const VISITOR_WRITES_PER_MINUTE = 8;
 const COLUMN_IDS = new Set(COLUMNS.map(c => c.id));
 
 const ERROR_MESSAGES = {
@@ -68,6 +71,17 @@ export function createFirebaseStore({ db }) {
     /** Arka plandaki yazımın hatasını arayüze bildirir (yazım yerelde zaten uygulanmıştır). */
     function run(promise) {
         promise.catch(err => fail(err));
+    }
+
+    const writeLimit = createRateLimiter({ max: VISITOR_WRITES_PER_MINUTE, perMs: 60_000 });
+
+    /** Hız sınırı aşılmadıysa true. Aşıldıysa kullanıcıya nedenini söyler (yazım reddedilir, metin korunur). */
+    function allowVisitorWrite() {
+        if (writeLimit.tryTake()) return true;
+        const seconds = Math.ceil(writeLimit.waitMs() / 1000);
+        error = { code: 'rate-limited', message: `Çok hızlı yazıyorsun. ${seconds} saniye sonra tekrar dene.`, fatal: false };
+        publish();
+        return false;
     }
 
     /* ---------- Dinleyiciler ---------- */
@@ -223,7 +237,7 @@ export function createFirebaseStore({ db }) {
         addNote(ref, { text, author }) {
             const body = cleanText(text, LIMITS.note);
             const block = blocks.find(b => b.id === ref.blockId);
-            if (!body || !COLUMN_IDS.has(ref.colId) || block?.type !== 'week') return null;
+            if (!body || !COLUMN_IDS.has(ref.colId) || block?.type !== 'week' || !allowVisitorWrite()) return null;
             const noteRef = doc(collection(db, 'notes'));
             run(setDoc(noteRef, {
                 termId: ref.termId, blockId: ref.blockId, col: ref.colId,
@@ -240,7 +254,8 @@ export function createFirebaseStore({ db }) {
         },
         addComment(ref, { text, author }) {
             const body = cleanText(text, LIMITS.comment);
-            if (!body || !notes.some(n => n.id === ref.noteId)) return null;
+            const target = notes.find(n => n.id === ref.noteId);
+            if (!body || !target || (target.commentCount ?? 0) >= LIMITS.commentsPerNote || !allowVisitorWrite()) return null;
             const noteRef = doc(db, 'notes', ref.noteId);
             const commentRef = doc(collection(noteRef, 'comments'));
             const batch = writeBatch(db);

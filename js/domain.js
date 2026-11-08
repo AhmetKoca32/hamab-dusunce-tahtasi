@@ -16,8 +16,11 @@ export const COLUMNS = Object.freeze([
 
 export const WEEKS_PER_TERM = 12;
 
-/** Alan uzunluk sınırları. Firestore güvenlik kurallarındaki sınırlarla aynı olmalıdır (firestore.rules). */
-export const LIMITS = Object.freeze({ title: 80, note: 5000, comment: 1000, author: 40, report: 20000 });
+/**
+ * Alan uzunluk ve adet sınırları. Firestore güvenlik kurallarındaki sınırlarla aynı olmalıdır (firestore.rules).
+ * `commentsPerNote`: bir nota yazılabilecek en çok yorum (kotayı ve yığılmayı korur).
+ */
+export const LIMITS = Object.freeze({ title: 80, note: 5000, comment: 1000, author: 40, report: 20000, commentsPerNote: 200 });
 
 /** Boşlukları kırpar ve sınıra keser; boşsa '' döner. */
 export const cleanText = (value, max) => String(value ?? '').trim().slice(0, max);

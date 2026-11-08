@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { createLocalStore, STORE_KEY } from '../js/backend/local-store.js';
+import { LIMITS } from '../js/domain.js';
 
 /** localStorage yerine bellekte çalışan sahte depolama. */
 function fakeStorage(initial = {}) {
@@ -253,4 +254,16 @@ test('uzunluk sınırları: not 5000, yorum 1000 karaktere kesilir', () => {
     const note = store.getState().terms[0].blocks[0].cols.sorular[0];
     assert.equal(note.text.length, 5000);
     assert.equal(note.comments[0].text.length, 1000);
+});
+
+test('bir nota en çok LIMITS.commentsPerNote yorum yazılabilir', () => {
+    const store = createLocalStore(fakeStorage());
+    const ref = { ...firstWeekRef(store) };
+    ref.noteId = store.addNote(ref, { text: 'not', author: '' });
+
+    for (let i = 0; i < LIMITS.commentsPerNote; i += 1) {
+        assert.notEqual(store.addComment(ref, { text: `yorum ${i}`, author: '' }), null, `yorum ${i}`);
+    }
+    assert.equal(store.addComment(ref, { text: 'fazla', author: '' }), null);
+    assert.equal(store.getState().terms[0].blocks[0].cols.sorular[0].commentCount, LIMITS.commentsPerNote);
 });

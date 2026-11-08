@@ -136,9 +136,10 @@ function composerEl(term, week, col) {
             event.preventDefault();
             const body = ui.draft.text.trim();
             if (!body) { text.focus(); return; }
+            const id = store.addNote({ termId: term.id, blockId: week.id, colId: col.id }, { text: body, author: ui.draft.author });
+            if (id === null) { refresh(); return; }   // reddedildi (ör. çok hızlı yazıldı): yazılan metin kaybolmasın
             rememberAuthor(ui.draft.author.trim());
             ui.composer = null;
-            store.addNote({ termId: term.id, blockId: week.id, colId: col.id }, { text: body, author: ui.draft.author });
             refresh();
         },
         onkeydown: event => { if (event.key === 'Escape') closeComposer(); }

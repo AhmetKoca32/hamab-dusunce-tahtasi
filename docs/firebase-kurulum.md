@@ -95,22 +95,92 @@ Siteyi aç, logoya 3 kez tıkla, şifreyle giriş yap. **+ Dönem ekle** ile ilk
 - [ ] Not silme ve dönem/hafta/rapor değiştirme yalnızca düzenleyiciyle çalışıyor.
 - [ ] Yorum sayısı not kartında güncelleniyor.
 
-## Kota ve maliyet (Spark planı)
+## Kota koruması (Spark planı)
 
-Spark planında günlük ücretsiz sınırlar vardır (yazma ve okuma sayıları, 1 GiB depolama). Güncel değerleri
-[Firebase fiyatlandırma sayfasından](https://firebase.google.com/pricing) kontrol et. Sınır aşılırsa
-ek ücret kesilmez, o gün için işlemler reddedilir. Okumayı düşük tutmak için tasarım şöyle:
+### Sınırlar ve ne olur
 
-- Yalnızca **seçili dönemin** blokları ve notları dinlenir.
-- **Yorumlar** yalnızca not paneli açılınca yüklenir; kartlardaki yorum sayısı notun kendi alanından gelir.
-- Kalıcı yerel önbellek sayfa yenilemelerinde tekrar okumayı azaltır.
+Spark planında günlük ücretsiz sınırlar vardır (kabaca günde 50 bin okuma, 20 bin yazma, 20 bin silme; 1 GiB
+depolama). **Güncel değerleri** [Firebase fiyatlandırma sayfasından](https://firebase.google.com/pricing) kontrol et.
+Sınır aşılırsa **ek ücret kesilmez**: o gün için işlemler reddedilir ve ertesi gün sıfırlanır. Yani asıl risk para
+değil, sitenin bir gün boyunca kullanılamaması. Kullanımı
+[Firestore → Kullanım](https://console.firebase.google.com/project/hamab-dusunce-tahtasi/firestore/databases/-default-/usage)
+sekmesinden izle.
 
-## API anahtarı kısıtlaması
+### Gerçekçi tüketim
 
-`js/firebase-config.js` içindeki `apiKey` herkese açıktır ve bu normaldir; tek başına veriye erişim sağlamaz.
-Yine de anahtarı yalnızca sitenin adreslerine kısıtlamak, başkalarının kendi kotanı kullanmasını zorlaştırır.
-GitHub gibi tarayıcılar bu anahtarı "sızdırılmış Google anahtarı" diye işaretleyebilir; anahtar zaten web
-istemcisi içindir, uyarı zararsızdır, kısıtlama uyarıyı da anlamsız kılar.
+- **Sayfa açılışı** (30 dakikadan uzun aradan sonra): yaklaşık `1 + hafta sayısı (12-13) + seçili dönemdeki not sayısı`
+  okuma. Dönem sonunda ~500 not varsa ≈ 500 okuma. Günde 50 bin okuma ≈ **~100 soğuk açılış**. 20 kişilik bir ekip için
+  normalde yeter; toplantı günü hepsi birden açsa 20 × 500 = 10 bin.
+- **Yorum paneli:** açılışta o notun yorum sayısı kadar okuma.
+- **Not veya yorum ekleme:** 1 yazma + kural içindeki 1-2 okuma (kurallardaki `get()` de kotadan düşer).
+- Not sayısı çok büyürse (bir dönemde ~1500+ not) açılış maliyeti kotayı zorlar; o zaman notlar yalnızca açık haftalar
+  için yüklenecek şekilde değiştirilebilir (okumayı ~10 kat azaltır).
+
+### Hangi önlemler var
+
+| Önlem | Neyi korur | Durum |
+|---|---|---|
+| Yalnızca **seçili dönem** dinlenir, yorumlar panel açılınca yüklenir | Meşru okuma tüketimi | Var |
+| Kalıcı yerel önbellek | Meşru okuma tüketimi | Var |
+| Sunucu kuralları: alan, boyut, sunucu zaman damgası, sayaç doğrulaması | Bozuk veri, sahte alanlar, sayaç kurcalama | Var, canlıda sınandı |
+| Not başına **en çok 200 yorum** (kural + istemci) | Tek notta sınırsız yığılma | Var, canlıda sınandı |
+| Tarayıcıdan **dakikada en çok 8 not/yorum** | Hatalı döngü, çift tıklama, basılı kalan tuş | Var (kaza önlemi, güvenlik değil) |
+| **Acil durum kilidi** (`npm run lockdown:readonly` / `lockdown:closed` / `unlock`) | Saldırı sırasında zararı durdurmak | Hazır, elle çalıştırılır |
+| **App Check** (reCAPTCHA v3) | Botlar, kendi betiğini yazan biri | Kod hazır, **anahtar girilene kadar kapalı** |
+
+### Dürüst sınırlar
+
+- Not ve yorum yazmak giriş gerektirmez ve okuma herkese açık, bu yüzden **API anahtarını bilen biri, kendi
+  bilgisayarından bir betikle istekleri döngüye alıp günlük kotayı tüketebilir.** O gün yazma ya da okuma kapanır,
+  veri silinmez ve ücret çıkmaz. Dakikada 8 sınırı ve yorum sınırı bu saldırıyı **durdurmaz**: tarayıcıda çalıştığı
+  için betik onları hiç kullanmaz.
+- Buna karşı **tek gerçek önlem App Check**'tir (aşağıda). Ondan da emin olmak için ekibe özel bir parola
+  (aşağıda "Takım parolası") eklenebilir.
+- **API anahtarını sitenin adreslerine kısıtlamak (HTTP referrer) bir güvenlik önlemi değildir:** `Referer` başlığını
+  komut satırından istediği gibi yazabilen biri bunu atlar. Yalnızca sıradan tarayıcıdan başka siteden kullanımı
+  zorlaştırır. Yine de ekleyebilirsin, ama kotayı korumasına güvenme.
+
+### App Check kurulumu (sıra önemli)
+
+App Check, Firestore'a gelen her isteğe, isteğin gerçekten bu siteden geldiğini kanıtlayan bir belirteç ekler.
+Belirteci olmayan istekleri sunucu reddeder. reCAPTCHA v3 kullanır (ücretsiz, görünmez, kullanıcıdan bir şey istemez).
+
+1. [reCAPTCHA yönetim sayfasında](https://www.google.com/recaptcha/admin) **v3** türünde bir site oluştur. Alan adları:
+   `hamab-dusunce-tahtasi.vercel.app` (yayın adresin neyse o) ve `localhost`. **Site anahtarını** ve **gizli anahtarı** al.
+2. [Firebase konsolu → App Check](https://console.firebase.google.com/project/hamab-dusunce-tahtasi/appcheck) →
+   Uygulamalar → `hamab-web` → **reCAPTCHA (v3)** → gizli anahtarı yapıştır → Kaydet.
+3. `js/firebase-config.js` içinde `appCheckSiteKey` değerine **site anahtarını** yaz, commit'le ve yayınla. (Gizli
+   anahtar koda **girmez**, yalnızca Firebase konsoluna girilir.)
+4. Yerelde denemek için siteyi `localhost`'ta aç: tarayıcı konsolu bir **hata ayıklama belirteci** yazar. App Check →
+   Uygulamalar → ⋮ → **Hata ayıklama belirteçlerini yönet**'e ekle, yoksa yerelde istekler reddedilir.
+5. App Check → **API'ler → Cloud Firestore**: önce "ölçümler"i izle (doğrulanmış istek oranı ~%100 olmalı).
+   **Ancak ondan sonra "Zorunlu kıl" de.** Zorunlu kıldığın anda belirteçsiz her istek reddedilir (eski açık sekmeler
+   dahil); anahtarı yayınlamadan zorunlu kılarsan site çalışmaz.
+
+Bir sorun çıkarsa konsoldan "Zorunlu kılmayı kaldır" demek siteyi hemen eski haline döndürür.
+
+### Saldırı ya da kota tükenmesi olursa
+
+1. [Firestore → Kullanım](https://console.firebase.google.com/project/hamab-dusunce-tahtasi/firestore/databases/-default-/usage):
+   hangi kota tükendi, okuma mı yazma mı?
+2. Yazma tükeniyorsa: `npm run lockdown:readonly` (herkes okur, kimse yazamaz). Okuma tükeniyorsa:
+   `npm run lockdown:closed` (kimse okuyamaz, site hata şeridi gösterir). Komutlar yalnızca **kural dosyasını**
+   değiştirir, veriye dokunmaz. Firebase CLI'de oturum açık olmalı (`firebase login`).
+3. Nedeni araştır, App Check'i zorunlu kıl.
+4. `npm run unlock` ile normal kuralları geri yükle (kilitler `ops/` altındadır).
+
+### Takım parolası (isteğe bağlı, uygulanmadı)
+
+Site yalnızca ekip içinse, okuma ve yazmayı tek bir paylaşılan "ekip" hesabıyla kısıtlamak kota saldırılarını neredeyse
+tamamen keser: kurallarda `request.auth != null` şartı olur ve ziyaretçi siteyi ilk açışta parolayı bir kez girer
+(cihazda hatırlanır). Bedeli: parolayı bilmeyen kimse siteyi göremez ve ekipten ayrılanda parola değişir. Bu bir
+ürün kararıdır, istersen eklenir.
+
+## API anahtarı hakkında
+
+`js/firebase-config.js` içindeki `apiKey` herkese açıktır ve bu normaldir; tek başına veriye erişim sağlamaz, koruma
+sunucu kurallarındadır. GitHub gibi tarayıcılar bu anahtarı "sızdırılmış Google anahtarı" diye işaretleyebilir; anahtar
+zaten web istemcisi içindir, uyarı zararsızdır. İsteğe bağlı kısıtlama:
 
 [Google Cloud Console → APIs & Services → Credentials](https://console.cloud.google.com/apis/credentials)
 → "Browser key" (Firebase'in otomatik oluşturduğu) → **Website restrictions** (HTTP referrers):
@@ -126,9 +196,9 @@ Adres eksik yazılırsa giriş sessizce bozulur. Özel alan adı eklenirse onu d
 
 ## Güvenlik notları
 
-- Notlar ve yorumlar giriş gerektirmeden eklenebilir (sitenin amacı bu). Kurallar biçimi ve uzunluğu doğrular,
-  ama **hız sınırı yoktur**: kötü niyetli biri çok sayıda geçerli not ekleyebilir. Sorun olursa **App Check**
-  (reCAPTCHA) eklenebilir.
+- Notlar ve yorumlar giriş gerektirmeden eklenebilir (sitenin amacı bu). Kurallar biçimi, uzunluğu ve not başına
+  yorum sayısını doğrular, ama **sunucuda hız sınırı yoktur**: kötü niyetli biri çok sayıda geçerli not ekleyebilir.
+  Bunun çaresi App Check'tir ([Kota koruması](#kota-koruması-spark-planı)).
 - Notları ve yorumları yalnızca düzenleyici silebilir.
 - Firestore'un Spark planında otomatik yedekleme yoktur. Önemli bir dönem sonunda dışa aktarmayı düşün
   (`gcloud firestore export` Blaze planı ister; alternatif olarak raporları ayrıca kaydet).

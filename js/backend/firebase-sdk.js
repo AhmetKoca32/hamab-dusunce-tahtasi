@@ -3,6 +3,8 @@
 
 export { initializeApp } from 'https://www.gstatic.com/firebasejs/11.10.0/firebase-app.js';
 
+export { initializeAppCheck, ReCaptchaV3Provider } from 'https://www.gstatic.com/firebasejs/11.10.0/firebase-app-check.js';
+
 export {
     getFirestore, initializeFirestore, persistentLocalCache, persistentMultipleTabManager,
     collection, doc, query, where, orderBy, onSnapshot, getDoc, getDocs,

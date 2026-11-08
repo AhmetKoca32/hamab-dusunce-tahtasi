@@ -22,3 +22,8 @@ export const firebaseConfig = {
 // "şifremi unuttum" e-postasıyla hesabı ele geçirmek mümkün değildir. Firebase konsolunda kullanıcıyı AYNI
 // adresle ekle (docs/firebase-kurulum.md, adım 4).
 export const editorEmail = 'duzenleyici@hamab-dusunce-tahtasi.invalid';
+
+// App Check (bot ve komut dosyası koruması): reCAPTCHA v3 SİTE anahtarı (gizli anahtar DEĞİL, burada durması normal).
+// `null` iken App Check kapalıdır. Nasıl açılacağı: docs/firebase-kurulum.md, "Kota koruması".
+// ÖNEMLİ: anahtarı girip siteyi yayınlamadan Firebase konsolunda "zorunlu kıl"ma, yoksa site çalışmaz.
+export const appCheckSiteKey = null;

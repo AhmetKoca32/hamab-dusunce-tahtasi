@@ -86,7 +86,7 @@ test('cleanText: kırpar, sınıra keser, boşsa boş döner', () => {
 });
 
 test('LIMITS güvenlik kurallarıyla aynı değerleri taşır', () => {
-    assert.deepEqual({ ...LIMITS }, { title: 80, note: 5000, comment: 1000, author: 40, report: 20000 });
+    assert.deepEqual({ ...LIMITS }, { title: 80, note: 5000, comment: 1000, author: 40, report: 20000, commentsPerNote: 200 });
 });
 
 test('selectedTerm: seçili dönemi verir, seçim yoksa null', () => {

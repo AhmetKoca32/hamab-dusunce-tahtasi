@@ -99,14 +99,14 @@ service cloud.firestore {
         && block.data.termId == d.termId;
     }
 
-    // Notta yalnızca yorum sayısı değişebilir: herkes +1 yapabilir (yorum eklerken),
-    // yalnızca düzenleyici -1 yapabilir (yorum silerken).
+    // Notta yalnızca yorum sayısı değişebilir: herkes +1 yapabilir (yorum eklerken, en çok 200'e kadar),
+    // yalnızca düzenleyici -1 yapabilir (yorum silerken). 200, js/domain.js'teki LIMITS.commentsPerNote ile aynıdır.
     function validCountChange() {
       let d = request.resource.data;
       let before = resource.data.commentCount;
       return d.diff(resource.data).affectedKeys().hasOnly(['commentCount'])
         && d.commentCount is int
-        && (d.commentCount == before + 1
+        && ((d.commentCount == before + 1 && d.commentCount <= 200)
             || (isAdmin() && d.commentCount == before - 1 && d.commentCount >= 0));
     }
 
@@ -125,8 +125,9 @@ service cloud.firestore {
           && text(d.text, 1000)
           && optionalText(d.author, 40)
           && d.ts == request.time
-          // Yorum, aynı toplu yazımda notun yorum sayısını tam 1 artırmalı.
-          && getAfter(notePath).data.commentCount == get(notePath).data.commentCount + 1;
+          // Yorum, aynı toplu yazımda notun yorum sayısını tam 1 artırmalı; bir nota en çok 200 yorum yazılabilir.
+          && getAfter(notePath).data.commentCount == get(notePath).data.commentCount + 1
+          && getAfter(notePath).data.commentCount <= 200;
       }
 
       match /comments/{commentId} {
