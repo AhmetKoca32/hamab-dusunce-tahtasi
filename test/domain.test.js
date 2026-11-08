@@ -1,8 +1,8 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
-    COLUMNS, WEEKS_PER_TERM, newWeek, newTerm, seedState, isValidState, isWeek,
-    findTerm, findBlock, findNote, noteCounts, latestActiveWeekId
+    COLUMNS, WEEKS_PER_TERM, LIMITS, newWeek, newTerm, seedState, isValidState, isWeek,
+    findTerm, findBlock, findNote, noteCounts, latestActiveWeekId, commentCount, cleanText, selectedTerm
 } from '../js/domain.js';
 
 const note = (ts, comments = 0) => ({ id: `n${ts}`, text: 't', author: '', ts, comments: Array.from({ length: comments }, (_, i) => ({ id: `c${i}`, text: 'y', author: '', ts })) });
@@ -63,4 +63,35 @@ test('latestActiveWeekId raporları (blok olarak) atlar', () => {
     term.blocks.splice(1, 0, { id: 'r', type: 'report', title: 'Rapor', text: 'x' });
     assert.equal(isWeek(term.blocks[1]), false);
     assert.equal(latestActiveWeekId(term), term.blocks[0].id);
+});
+
+test('commentCount: yeni kayıtlarda commentCount, eski yerel kayıtlarda comments dizisi', () => {
+    assert.equal(commentCount({ commentCount: 4, comments: [1] }), 4);   // commentCount önceliklidir
+    assert.equal(commentCount({ comments: [1, 2] }), 2);
+    assert.equal(commentCount({}), 0);
+});
+
+test('noteCounts commentCount alanını kullanır', () => {
+    const week = newWeek(1);
+    week.cols.sorular.push({ id: 'a', text: 't', author: '', ts: 1, commentCount: 3 });
+    assert.deepEqual(noteCounts(week), { notes: 1, comments: 3 });
+});
+
+test('cleanText: kırpar, sınıra keser, boşsa boş döner', () => {
+    assert.equal(cleanText('  merhaba  ', 80), 'merhaba');
+    assert.equal(cleanText('abcdef', 3), 'abc');
+    assert.equal(cleanText('   ', 80), '');
+    assert.equal(cleanText(null, 80), '');
+    assert.equal(cleanText(undefined, 80), '');
+});
+
+test('LIMITS güvenlik kurallarıyla aynı değerleri taşır', () => {
+    assert.deepEqual({ ...LIMITS }, { title: 80, note: 5000, comment: 1000, author: 40, report: 20000 });
+});
+
+test('selectedTerm: seçili dönemi verir, seçim yoksa null', () => {
+    const state = { terms: [{ id: 'a', blocks: [] }, { id: 'b', blocks: [] }], selectedTermId: 'b' };
+    assert.equal(selectedTerm(state).id, 'b');
+    assert.equal(selectedTerm({ ...state, selectedTermId: null }), null);
+    assert.equal(selectedTerm({ terms: [], selectedTermId: null }), null);
 });

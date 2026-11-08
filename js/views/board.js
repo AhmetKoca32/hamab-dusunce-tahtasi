@@ -3,17 +3,29 @@
 import { $, h } from '../lib/dom.js';
 import { byline, fullTime } from '../lib/time.js';
 import { savedAuthor, rememberAuthor } from '../lib/prefs.js';
-import { COLUMNS, isWeek, noteCounts } from '../domain.js';
+import { COLUMNS, commentCount, isWeek, noteCounts } from '../domain.js';
 import { store, auth, ui, currentTerm, refresh } from '../context.js';
 import { openNote } from './drawer.js';
 import { addWeek, addReport, editReport, renameBlock, deleteBlock } from '../actions.js';
 
+const message = text => h('div', { class: 'empty-state', role: 'status' }, text);
+
 export function renderBoard() {
+    const { status } = store.getState();
     const term = currentTerm();
     const editing = auth.isEditor();
-    const rows = [];
 
-    if (!term.blocks.length) rows.push(h('div', { class: 'empty-state' }, 'Bu dönemde henüz içerik yok.'));
+    if (!term) {
+        $('board').replaceChildren(message(
+            status === 'loading' ? 'Yükleniyor…'
+                : status === 'error' ? 'Veriler yüklenemedi.'
+                    : editing ? 'Henüz dönem yok. Yukarıdan "+ Dönem ekle" ile başla.' : 'Henüz içerik eklenmemiş.'));
+        return;
+    }
+
+    const rows = [];
+    if (status === 'loading') rows.push(message('Yükleniyor…'));
+    else if (!term.blocks.length) rows.push(message('Bu dönemde henüz içerik yok.'));
 
     term.blocks.forEach((block, index) => {
         rows.push(isWeek(block) ? weekEl(term, block, editing) : reportEl(block, editing));
@@ -43,7 +55,10 @@ function weekEl(term, week, editing) {
 
     return h('section', { class: 'week' + (open ? ' open' : ''), id: `week-${week.id}`, 'aria-label': week.title },
         h('h2', { class: 'week-head' },
-            h('button', { class: 'week-toggle', type: 'button', 'aria-expanded': String(open), 'aria-controls': `panel-${week.id}`, onclick: () => toggleWeek(week.id) },
+            h('button', {
+                class: 'week-toggle', type: 'button', 'aria-expanded': String(open), 'aria-controls': `panel-${week.id}`,
+                'data-focus-key': `toggle-${week.id}`, onclick: () => toggleWeek(week.id)
+            },
                 h('span', { class: 'week-name' }, week.title),
                 h('span', { class: 'week-meta' }, h('span', {}, summary), h('span', { class: 'chev', 'aria-hidden': 'true' })))),
         h('div', { class: 'panel', id: `panel-${week.id}` },
@@ -81,11 +96,12 @@ function columnEl(term, week, col) {
 }
 
 function noteEl(note, onclick) {
-    return h('button', { class: 'note', type: 'button', 'data-note': note.id, onclick },
+    const comments = commentCount(note);
+    return h('button', { class: 'note', type: 'button', 'data-note': note.id, 'data-focus-key': `note-${note.id}`, onclick },
         h('span', { class: 'note-text' }, note.text),
         h('span', { class: 'note-meta' },
             h('span', { title: fullTime(note.ts) }, byline(note)),
-            note.comments.length ? h('span', { class: 'note-comments' }, `${note.comments.length} yorum`) : null));
+            comments ? h('span', { class: 'note-comments' }, `${comments} yorum`) : null));
 }
 
 /* ---------- Satır içi not yazma ---------- */
@@ -103,13 +119,13 @@ function closeComposer() {
 
 function composerEl(term, week, col) {
     const text = h('textarea', {
-        id: 'composerText', maxlength: 5000, placeholder: 'Notunu yaz…', 'aria-label': `${col.title} için yeni not`,
+        id: 'composerText', 'data-focus-key': 'composerText', maxlength: 5000, placeholder: 'Notunu yaz…', 'aria-label': `${col.title} için yeni not`,
         oninput: event => { ui.draft.text = event.target.value; }
     });
     text.value = ui.draft.text;
 
     const author = h('input', {
-        type: 'text', maxlength: 40, placeholder: 'İsim (isteğe bağlı)', 'aria-label': 'İsim (isteğe bağlı)', autocomplete: 'name',
+        type: 'text', 'data-focus-key': 'composerAuthor', maxlength: 40, placeholder: 'İsim (isteğe bağlı)', 'aria-label': 'İsim (isteğe bağlı)', autocomplete: 'name',
         oninput: event => { ui.draft.author = event.target.value; }
     });
     author.value = ui.draft.author;
@@ -123,6 +139,7 @@ function composerEl(term, week, col) {
             rememberAuthor(ui.draft.author.trim());
             ui.composer = null;
             store.addNote({ termId: term.id, blockId: week.id, colId: col.id }, { text: body, author: ui.draft.author });
+            refresh();
         },
         onkeydown: event => { if (event.key === 'Escape') closeComposer(); }
     },

@@ -1,19 +1,14 @@
 // Düzenleyiciye özel kullanıcı akışları: pencereyi aç, onay al, depoya yaz.
 // Görünümler bunları çağırır; veri değişince store aboneliği ekranı kendiliğinden yeniler.
 
-import { store, ui, currentTerm, refresh } from './context.js';
+import { store, ui, currentTerm, selectTerm, refresh } from './context.js';
 import { askText } from './views/dialog.js';
-import { latestActiveWeekId } from './domain.js';
 
 export async function addTerm() {
     const result = await askText({ title: 'Yeni dönem', label: 'Dönem adı (ör. 2027-2028 Birinci Dönem)', okText: 'Ekle' });
     if (!result) return;
     const id = store.addTerm(result.text);
-    if (id) {
-        ui.termId = id;
-        ui.expanded = new Set([latestActiveWeekId(currentTerm())].filter(Boolean));
-        refresh();
-    }
+    if (id) selectTerm(id);
 }
 
 export async function renameTerm(term) {
@@ -23,11 +18,7 @@ export async function renameTerm(term) {
 
 export function deleteTerm(term) {
     if (!confirm(`"${term.title}" dönemi ve içindeki tüm notlar silinsin mi?`)) return;
-    if (store.deleteTerm(term.id)) {
-        ui.termId = store.getState().terms[0].id;
-        ui.expanded = new Set([latestActiveWeekId(currentTerm())].filter(Boolean));
-        refresh();
-    }
+    store.deleteTerm(term.id);   // seçim, silinen dönemden otomatik olarak ilk döneme geçer
 }
 
 export async function renameBlock(block) {

@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { createStore, STORE_KEY } from '../js/store.js';
+import { createLocalStore, STORE_KEY } from '../js/backend/local-store.js';
 
 /** localStorage yerine bellekte çalışan sahte depolama. */
 function fakeStorage(initial = {}) {
@@ -18,28 +18,28 @@ const firstWeekRef = store => {
 };
 
 test('boş depolamada tohum veriyle açılır', () => {
-    const store = createStore(fakeStorage());
+    const store = createLocalStore(fakeStorage());
     assert.equal(store.getState().terms.length, 2);
 });
 
 test('bozuk ya da geçersiz kayıt tohum veriye döner', () => {
     for (const raw of ['{bozuk json', '{"terms":[]}', 'null']) {
-        const store = createStore(fakeStorage({ [STORE_KEY]: raw }));
+        const store = createLocalStore(fakeStorage({ [STORE_KEY]: raw }));
         assert.equal(store.getState().terms.length, 2, raw);
     }
 });
 
 test('değişiklikler kaydedilir ve yeni bir depo aynı veriyi okur', () => {
     const storage = fakeStorage();
-    const store = createStore(storage);
+    const store = createLocalStore(storage);
     store.addNote(firstWeekRef(store), { text: 'Merhaba', author: 'Elif' });
 
-    const reopened = createStore(storage);
+    const reopened = createLocalStore(storage);
     assert.equal(reopened.getState().terms[0].blocks[0].cols.sorular[0].text, 'Merhaba');
 });
 
 test('addNote: metni ve ismi temizler, boş notu reddeder, geçersiz sütunu reddeder', () => {
-    const store = createStore(fakeStorage());
+    const store = createLocalStore(fakeStorage());
     const ref = firstWeekRef(store);
 
     const id = store.addNote(ref, { text: '  selam  ', author: '  Can  ' });
@@ -55,13 +55,13 @@ test('addNote: metni ve ismi temizler, boş notu reddeder, geçersiz sütunu red
 });
 
 test('addNote isimi 40 karakterle sınırlar', () => {
-    const store = createStore(fakeStorage());
+    const store = createLocalStore(fakeStorage());
     store.addNote(firstWeekRef(store), { text: 'x', author: 'a'.repeat(100) });
     assert.equal(store.getState().terms[0].blocks[0].cols.sorular[0].author.length, 40);
 });
 
 test('yorum ekleme ve silme', () => {
-    const store = createStore(fakeStorage());
+    const store = createLocalStore(fakeStorage());
     const ref = { ...firstWeekRef(store) };
     ref.noteId = store.addNote(ref, { text: 'not', author: '' });
 
@@ -74,7 +74,7 @@ test('yorum ekleme ve silme', () => {
 });
 
 test('deleteNote yalnızca o notu siler', () => {
-    const store = createStore(fakeStorage());
+    const store = createLocalStore(fakeStorage());
     const ref = firstWeekRef(store);
     const keep = store.addNote(ref, { text: 'kalsın', author: '' });
     const drop = store.addNote(ref, { text: 'gitsin', author: '' });
@@ -85,7 +85,7 @@ test('deleteNote yalnızca o notu siler', () => {
 });
 
 test('addReport istenen konuma eklenir, konumu sınırlar, boş metni reddeder', () => {
-    const store = createStore(fakeStorage());
+    const store = createLocalStore(fakeStorage());
     const termId = store.getState().terms[0].id;
 
     const id = store.addReport(termId, 1, 'Dönem raporu');
@@ -101,7 +101,7 @@ test('addReport istenen konuma eklenir, konumu sınırlar, boş metni reddeder',
 });
 
 test('setReportText yalnızca raporlarda çalışır', () => {
-    const store = createStore(fakeStorage());
+    const store = createLocalStore(fakeStorage());
     const termId = store.getState().terms[0].id;
     const weekId = store.getState().terms[0].blocks[0].id;
     const reportId = store.addReport(termId, 1, 'eski');
@@ -115,7 +115,7 @@ test('setReportText yalnızca raporlarda çalışır', () => {
 });
 
 test('addWeek bir sonraki numarayı kullanır', () => {
-    const store = createStore(fakeStorage());
+    const store = createLocalStore(fakeStorage());
     const termId = store.getState().terms[0].id;
     store.addReport(termId, 0, 'rapor sayılmaz');
     const id = store.addWeek(termId);
@@ -125,7 +125,7 @@ test('addWeek bir sonraki numarayı kullanır', () => {
 });
 
 test('deleteTerm son dönemi silmez', () => {
-    const store = createStore(fakeStorage());
+    const store = createLocalStore(fakeStorage());
     const [a, b] = store.getState().terms.map(t => t.id);
     assert.equal(store.deleteTerm(a), true);
     assert.equal(store.deleteTerm(b), false);
@@ -133,7 +133,7 @@ test('deleteTerm son dönemi silmez', () => {
 });
 
 test('addTerm ve renameTerm boş adı reddeder', () => {
-    const store = createStore(fakeStorage());
+    const store = createLocalStore(fakeStorage());
     assert.equal(store.addTerm('   '), null);
     const id = store.addTerm('2027-2028 Birinci Dönem');
     assert.equal(store.getState().terms.at(-1).id, id);
@@ -143,7 +143,7 @@ test('addTerm ve renameTerm boş adı reddeder', () => {
 });
 
 test('subscribe: her değişiklikte haber verilir, abonelikten çıkınca durur', () => {
-    const store = createStore(fakeStorage());
+    const store = createLocalStore(fakeStorage());
     let calls = 0;
     const unsubscribe = store.subscribe(() => { calls += 1; });
 
@@ -157,9 +157,100 @@ test('subscribe: her değişiklikte haber verilir, abonelikten çıkınca durur'
 });
 
 test('durum değişmezdir: eski durum nesnesi değişiklikten etkilenmez', () => {
-    const store = createStore(fakeStorage());
+    const store = createLocalStore(fakeStorage());
     const before = store.getState();
     store.addTerm('Yeni');
     assert.equal(before.terms.length, 2);
     assert.equal(store.getState().terms.length, 3);
+});
+
+/* ---------- Firebase geçişiyle eklenen arayüz: durum, seçili dönem, yorum sayısı, yorum izleme ---------- */
+
+test('durum arayüzün beklediği alanları taşır', () => {
+    const state = createLocalStore(fakeStorage()).getState();
+    assert.equal(state.status, 'ready');
+    assert.equal(state.error, null);
+    assert.equal(state.selectedTermId, state.terms[0].id);
+});
+
+test('selectTerm seçimi değiştirir ve abonelere haber verir; bilinmeyen dönemi yok sayar', () => {
+    const store = createLocalStore(fakeStorage());
+    const second = store.getState().terms[1].id;
+    let calls = 0;
+    store.subscribe(() => { calls += 1; });
+
+    store.selectTerm(second);
+    assert.equal(store.getState().selectedTermId, second);
+    assert.equal(calls, 1);
+
+    store.selectTerm('yok');
+    store.selectTerm(second);   // zaten seçili
+    assert.equal(calls, 1);
+});
+
+test('seçili dönem silinince seçim ilk döneme geçer', () => {
+    const store = createLocalStore(fakeStorage());
+    const [first, second] = store.getState().terms.map(t => t.id);
+    store.selectTerm(second);
+    store.deleteTerm(second);
+    assert.equal(store.getState().selectedTermId, first);
+});
+
+test('seçim kalıcı değildir: yeni depo ilk dönemle açılır', () => {
+    const storage = fakeStorage();
+    const store = createLocalStore(storage);
+    store.addTerm('Kaydı başlat');                      // veriyi kaydet (seçim kaydedilmez)
+    store.selectTerm(store.getState().terms[1].id);
+
+    const reopened = createLocalStore(storage).getState();
+    assert.equal(reopened.selectedTermId, reopened.terms[0].id);
+});
+
+test('yorum sayısı yorum eklenip silindikçe güncellenir', () => {
+    const store = createLocalStore(fakeStorage());
+    const ref = { ...firstWeekRef(store) };
+    ref.noteId = store.addNote(ref, { text: 'not', author: '' });
+    const count = () => store.getState().terms[0].blocks[0].cols.sorular[0].commentCount;
+
+    assert.equal(count(), 0);
+    const a = store.addComment(ref, { text: 'bir', author: '' });
+    store.addComment(ref, { text: 'iki', author: '' });
+    assert.equal(count(), 2);
+    store.deleteComment(ref, a);
+    assert.equal(count(), 1);
+});
+
+test('watchComments: hemen, sonra her değişiklikte yorumları verir; abonelik durdurulabilir', () => {
+    const store = createLocalStore(fakeStorage());
+    const ref = { ...firstWeekRef(store) };
+    ref.noteId = store.addNote(ref, { text: 'not', author: '' });
+
+    const seen = [];
+    const stop = store.watchComments(ref, list => seen.push(list.map(c => c.text)));
+    assert.deepEqual(seen, [[]]);
+
+    store.addComment(ref, { text: 'merhaba', author: '' });
+    assert.deepEqual(seen.at(-1), ['merhaba']);
+
+    stop();
+    store.addComment(ref, { text: 'duyulmaz', author: '' });
+    assert.equal(seen.length, 2);
+});
+
+test('watchComments olmayan not için boş liste verir', () => {
+    const store = createLocalStore(fakeStorage());
+    let received = null;
+    store.watchComments({ ...firstWeekRef(store), noteId: 'yok' }, list => { received = list; });
+    assert.deepEqual(received, []);
+});
+
+test('uzunluk sınırları: not 5000, yorum 1000 karaktere kesilir', () => {
+    const store = createLocalStore(fakeStorage());
+    const ref = { ...firstWeekRef(store) };
+    ref.noteId = store.addNote(ref, { text: 'x'.repeat(6000), author: '' });
+    store.addComment(ref, { text: 'y'.repeat(2000), author: '' });
+
+    const note = store.getState().terms[0].blocks[0].cols.sorular[0];
+    assert.equal(note.text.length, 5000);
+    assert.equal(note.comments[0].text.length, 1000);
 });

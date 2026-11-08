@@ -1,9 +1,9 @@
-// Gizli düzenleyici girişi: logoya (ya da başlığa) 1,5 saniye içinde 3 kez tıklayınca şifre penceresi açılır.
+// Gizli düzenleyici girişi: logoya (ya da başlığa) 1,5 saniye içinde 3 kez tıklayınca giriş penceresi açılır.
 // Giriş yapılmamışsa sayfada düzenleme ile ilgili hiçbir şey görünmez.
 
 import { $ } from './lib/dom.js';
 import { auth, ui } from './context.js';
-import { askText } from './views/dialog.js';
+import { askLogin } from './views/dialog.js';
 import { closeNote } from './views/drawer.js';
 
 const TAPS_REQUIRED = 3;
@@ -21,11 +21,8 @@ export function initGate() {
         if (taps < TAPS_REQUIRED) return;
         taps = 0;
 
-        const result = await askText({
-            title: 'Düzenleyici girişi', label: 'Şifre', password: true, okText: 'Giriş',
-            validate: value => (auth.verify(value) ? '' : 'Şifre yanlış.')
-        });
-        if (result) auth.login(result.text);
+        await askLogin({ login: credentials => auth.login(credentials) });
+        // Başarılı girişte auth aboneliği ekranı kendiliğinden yeniler.
     });
 
     $('logoutBtn').addEventListener('click', () => {

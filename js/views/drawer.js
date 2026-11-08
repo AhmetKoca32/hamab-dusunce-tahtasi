@@ -1,4 +1,5 @@
 // Yorum paneli: masaüstünde sağdan, telefonda alttan açılır. Seçili notu ve yorumlarını gösterir.
+// Yorumlar yalnızca panel açıkken yüklenir ve canlı izlenir (okuma kotasını korur).
 
 import { $, h } from '../lib/dom.js';
 import { byline, fullTime } from '../lib/time.js';
@@ -8,10 +9,16 @@ import { COLUMNS, findBlock, findNote } from '../domain.js';
 import { store, auth, ui } from '../context.js';
 
 export function openNote(ref, opener) {
+    ui.stopComments?.();
     ui.open = ref;
     ui.opener = opener || null;
+    ui.comments = [];
     $('commentAuthor').value = savedAuthor();
     renderDrawer();
+    ui.stopComments = store.watchComments(ref, comments => {
+        ui.comments = comments;
+        if (ui.open) renderDrawer();
+    });
     $('scrim').classList.add('on');
     $('drawer').classList.add('on');
     $('drawer').setAttribute('aria-hidden', 'false');
@@ -21,7 +28,10 @@ export function openNote(ref, opener) {
 export function closeNote() {
     if (!ui.open) return;
     const { noteId } = ui.open;
+    ui.stopComments?.();
+    ui.stopComments = null;
     ui.open = null;
+    ui.comments = [];
     $('scrim').classList.remove('on');
     $('drawer').classList.remove('on');
     $('drawer').setAttribute('aria-hidden', 'true');
@@ -32,7 +42,7 @@ export function closeNote() {
     ui.opener = null;
 }
 
-/** Veri değişince (yeni yorum, silinen not) açık paneli günceller; not yoksa kapatır. */
+/** Veri değişince (silinen not, yeni başlık) açık paneli günceller; not yoksa kapatır. */
 export function refreshDrawer() {
     if (ui.open) renderDrawer();
 }
@@ -40,7 +50,11 @@ export function refreshDrawer() {
 function renderDrawer() {
     const state = store.getState();
     const note = findNote(state, ui.open);
-    if (!note) { closeNote(); return; }
+    if (!note) {
+        // Veri yüklenirken ya da dönem değişirken not geçici olarak bulunamayabilir; yalnızca hazırken kapat.
+        if (state.status === 'ready') closeNote();
+        return;
+    }
 
     const week = findBlock(state, ui.open.termId, ui.open.blockId);
     const column = COLUMNS.find(c => c.id === ui.open.colId);
@@ -54,9 +68,9 @@ function renderDrawer() {
                 h('span', { title: fullTime(note.ts) }, byline(note)),
                 editing ? h('button', { class: 'btn btn--danger btn--sm', type: 'button', onclick: deleteCurrentNote }, 'Notu sil') : null)),
         h('div', { class: 'comments' },
-            h('h3', {}, note.comments.length ? `${note.comments.length} yorum` : 'Yorumlar'),
-            note.comments.length
-                ? note.comments.map(comment => commentEl(comment, editing))
+            h('h3', {}, ui.comments.length ? `${ui.comments.length} yorum` : 'Yorumlar'),
+            ui.comments.length
+                ? ui.comments.map(comment => commentEl(comment, editing))
                 : h('p', { class: 'empty' }, 'Henüz yorum yok. İlk yorumu sen yaz.')));
 
     const body = $('drawerBody');

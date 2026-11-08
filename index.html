@@ -19,6 +19,19 @@
 <body>
 <a class="skip-link" href="#top">İçeriğe geç</a>
 
+<!-- Yalnızca Firebase yapılandırması yokken (yerel geliştirme modu) görünür -->
+<div class="banner" id="modeBanner" hidden role="note">
+    <div class="wrap">Yerel mod: notlar yalnızca bu tarayıcıda tutulur, başkalarıyla paylaşılmaz.</div>
+</div>
+
+<!-- Sunucu ya da yazım hatası olduğunda görünür -->
+<div class="banner banner--error" id="statusBar" hidden role="alert">
+    <div class="wrap">
+        <span id="statusMessage"></span>
+        <button class="link-btn" id="statusDismiss" type="button">Kapat</button>
+    </div>
+</div>
+
 <header class="site-header">
     <div class="wrap">
         <div class="brand" id="brand">
@@ -70,7 +83,7 @@
 <div class="dialog-wrap" id="dialogWrap">
     <form class="dialog" id="dialog" role="dialog" aria-modal="true" aria-labelledby="dialogTitle" novalidate>
         <h2 id="dialogTitle"></h2>
-        <div class="field"><label class="field-label" id="dialogLabel" for="dialogField"></label><div id="dialogFieldHolder"></div></div>
+        <div class="field" id="dialogFieldHolder"></div>
         <div class="field" id="dialogAuthorHolder">
             <label class="field-label" for="dialogAuthor">İsim (isteğe bağlı)</label>
             <input type="text" id="dialogAuthor" maxlength="40">

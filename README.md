@@ -3,20 +3,19 @@
 **Hamab Kuramsal Düşünce Tahtası**: bir halk müziği ekibinin haftalık okuma notlarını, sorularını ve
 çıkarımlarını paylaştığı, herkesin not ekleyip yorum yazabildiği sade bir web sitesi.
 
-Derleme aracı yok, çerçeve yok: saf HTML, CSS ve tarayıcıda çalışan ES modülleri. Statik olarak
-yayınlanır (Vercel, GitHub Pages vb.).
+Derleme aracı yok, çerçeve yok: saf HTML, CSS ve tarayıcıda çalışan ES modülleri. Veriler Firebase'de
+(Firestore + Authentication, ücretsiz Spark planı), site statik olarak yayınlanır (Vercel vb.).
 
 ## Durum
 
 | | |
 |---|---|
 | Arayüz | Hazır (dönem sekmeleri, akordeon haftalar, yorum paneli, raporlar, gizli düzenleyici girişi) |
-| Veri | **Geçici.** Şu an her tarayıcının kendi `localStorage` alanında tutuluyor, **cihazlar arasında paylaşılmıyor** |
-| Giriş | **Geçici.** Şifre istemci kodunda açıkça yazılı, gerçek güvenlik sağlamaz |
-| Sonraki adım | Firebase (Firestore + Authentication): ortak notlar ve gerçek düzenleyici girişi |
+| Veri / giriş (Firebase) | Kod hazır ve birim testli. **Firebase projesi bağlanınca** ortak çalışır ([kurulum](docs/firebase-kurulum.md)) |
+| Yerel mod | `js/firebase-config.js` içindeki `firebaseConfig` `null` iken devreye girer: veriler yalnızca o tarayıcıda tutulur, **paylaşılmaz**. Sayfada bunu belirten bir şerit görünür |
 
-> **Gerçek ekip kullanımı için yayınlamadan önce Firebase adımı tamamlanmalıdır.** Aksi halde
-> herkes kendi tahtasını görür ve düzenleyici şifresi sayfa kaynağından okunabilir.
+> Firebase yapılandırması girilmeden yayınlanan site herkese **kendi boş tahtasını** gösterir.
+> Yayından önce [docs/firebase-kurulum.md](docs/firebase-kurulum.md) adımlarını tamamla.
 
 ## Çalıştırma
 
@@ -36,50 +35,64 @@ npm test
 
 ## Düzenleyici girişi
 
-Sayfanın üstündeki **logoya (ya da başlığa) 1,5 saniye içinde 3 kez tıkla**, şifre penceresi açılır.
-Giriş yapılmamışsa sayfada düzenleme ile ilgili hiçbir şey görünmez. Düzenleyici; dönemleri, hafta
-başlıklarını ve raporları değiştirebilir, notları ve yorumları silebilir.
+Sayfanın üstündeki **logoya (ya da başlığa) 1,5 saniye içinde 3 kez tıkla**, giriş penceresi açılır.
+Giriş yapılmamışsa sayfada düzenleme ile ilgili hiçbir şey görünmez.
 
-Geçici şifre `js/auth.js` içinde. Firebase aşamasında kaldırılacak.
+- **Firebase modunda:** yalnızca şifre. Tek, paylaşılan bir düzenleyici hesabı vardır (e-postası
+  `js/firebase-config.js` içinde sabit). Hesap **ve** Firestore'da `admins/{uid}` belgesi gerekir; yetki
+  sunucu tarafında güvenlik kurallarıyla zorunlu kılınır. Şifre **en az 8 karakter ve tahmin edilemez**
+  olmalıdır (isim, tarih, `12345678` gibi olmasın); koruma ona dayanır ([giriş modeli](docs/firebase-kurulum.md)).
+- **Yerel modda (yalnızca geliştirme):** yine yalnızca şifre, şifre `js/backend/local-auth.js` içinde.
+
+Düzenleyici; dönemleri, hafta başlıklarını ve raporları değiştirebilir, notları ve yorumları silebilir.
 
 ## Klasör yapısı
 
 ```
-index.html            İskelet: yalnızca yapı ve bağlantılar
-assets/               Logo (ileride fontlar)
-css/
-  tokens.css          Renk, tipografi, aralık ve yarıçap ölçekleri (tek kaynak)
-  base.css            Sıfırlama, sayfa iskeleti, üst bölüm, odak halkası
-  components.css      Düğme, dönem seçici, hafta, not, rapor, yan panel, pencere
+index.html              İskelet: yalnızca yapı ve bağlantılar
+assets/                 Logo (ileride fontlar)
+css/                    tokens.css (ölçekler), base.css (iskelet), components.css (bileşenler)
 js/
-  main.js             Giriş noktası: parçaları birbirine bağlar
-  context.js          Ortak bağlam: store, auth ve geçici arayüz durumu
-  domain.js           Saf mantık ve veri şeması (DOM yok, test edilir)
-  store.js            Veri deposu. Firebase'e geçişte değişecek tek dosya (1/2)
-  auth.js             Düzenleyici girişi. Firebase'e geçişte değişecek tek dosya (2/2)
-  actions.js          Düzenleyici akışları: pencere aç, onay al, depoya yaz
-  gate.js             Gizli giriş (logoya 3 tık)
-  views/              terms.js, board.js, drawer.js, dialog.js: yalnızca çizim
-  lib/                dom.js, time.js, focus.js, prefs.js: küçük yardımcılar
-test/                 Node'un yerleşik test çalıştırıcısıyla birim testler
+  main.js               Giriş noktası: parçaları bağlar, odak koruyarak yeniden çizer
+  context.js            Seçilen arka uç (store, auth) ve geçici arayüz durumu
+  domain.js             Saf mantık ve veri şeması (DOM yok, test edilir)
+  firebase-config.js    Firebase web yapılandırması (null = yerel mod)
+  actions.js            Düzenleyici akışları: pencere aç, onay al, depoya yaz
+  gate.js               Gizli giriş (logoya 3 tık)
+  backend/
+    index.js            Arka ucu seçer (Firebase / yerel / hata yedeği)
+    firebase-store.js   Firestore deposu       firebase-auth.js   Firebase girişi
+    local-store.js      localStorage deposu    local-auth.js      Yerel (geliştirme) girişi
+    assemble.js         Düz belgelerden arayüz durumunu kuran saf fonksiyonlar
+    firebase-sdk.js     Firebase SDK'sının tek giriş noktası (sürüm burada)
+    failed.js           Sunucuya ulaşılamazsa salt-okunur yedek
+  views/                terms.js, board.js, drawer.js, dialog.js: yalnızca çizim
+  lib/                  dom, time, focus, prefs, storage: küçük yardımcılar
+test/                   Node'un yerleşik test çalıştırıcısıyla birim testler
+firestore.rules         Güvenlik kuralları (asıl yetki denetimi burada)
+firebase.json  firestore.indexes.json
+docs/firebase-kurulum.md
 ```
 
 ### Mimari kural
 
 Arayüz veriye yalnızca `store` üzerinden dokunur ve veri değişince ekran **kendiliğinden** yenilenir
 (`store.subscribe`). Görünümler (`views/`) depoya yazmaz, akışlar (`actions.js`) ve olay işleyicileri yazar.
-Bu ayrım sayesinde Firebase'e geçiş `store.js` ve `auth.js` ile sınırlı kalır, arayüz değişmez.
+İki arka uç (Firebase, yerel) **aynı arayüzü** sunar (bkz. `js/backend/local-store.js` başı); hangisinin
+kullanılacağı yalnızca `js/backend/index.js`'de seçilir.
 
-### Veri şeması
+### Veri modeli (Firestore)
 
 ```
-state  = { terms: [Term] }
-Term   = { id, title, blocks: [Week | Report] }
-Week   = { id, type: 'week', title, cols: { sorular, dusunceler, cikarimlar: [Note] } }
-Report = { id, type: 'report', title, text }
-Note   = { id, text, author, ts, comments: [Comment] }
-Comment = { id, text, author, ts }
+terms/{id}                  { title, order, createdAt }
+blocks/{id}                 { termId, type: 'week'|'report', title, order, text?, createdAt }
+notes/{id}                  { termId, blockId, col, text, author, ts, commentCount }
+notes/{id}/comments/{id}    { text, author, ts }
+admins/{uid}                düzenleyici hesaplar (yalnızca konsoldan eklenir)
 ```
+
+Düz koleksiyonlar sayesinde 20 kişi aynı anda yazınca birbirinin verisini ezmez. Okuma kotasını korumak için
+yalnızca seçili dönemin blokları ve notları dinlenir; yorumlar not paneli açılınca yüklenir.
 
 ## Tasarım ilkeleri
 
@@ -96,11 +109,12 @@ Statik site, derleme adımı yok:
 - Build Command: boş bırak
 - Output Directory: boş bırak (kök dizin)
 
-Proje adı repo adını izler: `hamab-dusunce-tahtasi` → `hamab-dusunce-tahtasi.vercel.app`.
+Proje adı repo adını izler: `hamab-dusunce-tahtasi` → `hamab-dusunce-tahtasi.vercel.app`. Yayından sonra bu
+alanı Firebase'de **Authorized domains** listesine ekle ([kurulum, adım 7](docs/firebase-kurulum.md)).
 
 ## Yapılacaklar
 
-- [ ] Firebase: Firestore (ortak notlar) ve Authentication (düzenleyici girişi) ile güvenlik kuralları
+- [ ] Firebase projesini bağla ve doğrula ([kontrol listesi](docs/firebase-kurulum.md))
 - [ ] Fraunces fontunu siteye gömmek (`assets/fonts/`, Latin + Latin-Extended)
 - [ ] Haftalık kaynaklar için Drive bağlantısı alanı (ücretsiz çözüm)
-- [ ] İsteğe bağlı: karanlık mod (renkler zaten CSS değişkeni)
+- [ ] İsteğe bağlı: App Check (hız sınırı), karanlık mod (renkler zaten CSS değişkeni)

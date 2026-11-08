@@ -1,0 +1,142 @@
+rules_version = '2';
+
+// Hamab Kuramsal Düşünce Tahtası: Firestore güvenlik kuralları.
+//
+// Yetki modeli:
+//   - Herkes (giriş yapmadan) dönemleri, haftaları, notları ve yorumları OKUYABİLİR.
+//   - Herkes not ve yorum EKLEYEBİLİR (sitenin amacı bu), ama yalnızca geçerli biçimde.
+//   - Dönemleri, haftaları, raporları değiştirmek ve not/yorum silmek yalnızca DÜZENLEYİCİ içindir:
+//     giriş yapmış ve `admins/{uid}` belgesi bulunan hesap. Bu belgeler yalnızca Firebase konsolundan
+//     elle eklenir; istemciden oluşturulamaz.
+//
+// Sınırlar js/domain.js içindeki LIMITS ile aynı tutulmalıdır (başlık 80, not 5000, yorum 1000, isim 40,
+// rapor 20000 karakter).
+//
+// Bilinen sınır: giriş gerektirmeyen yazım, art arda çok sayıda geçerli not eklemeyi engelleyemez (hız
+// sınırı yok). Gerekirse sonradan App Check eklenir.
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ---------- Yardımcılar ----------
+
+    function isAdmin() {
+      return request.auth != null && exists(/databases/$(database)/documents/admins/$(request.auth.uid));
+    }
+
+    function text(value, max) {
+      return value is string && value.size() > 0 && value.size() <= max;
+    }
+
+    function optionalText(value, max) {
+      return value is string && value.size() <= max;
+    }
+
+    // ---------- Düzenleyici hesapları ----------
+    // Bir hesap yalnızca kendi belgesini okuyabilir (arayüz "düzenleyici miyim?" diye sorar).
+    // Listeleme ve her türlü yazım kapalı: düzenleyiciler yalnızca konsoldan eklenir.
+    match /admins/{uid} {
+      allow get: if request.auth != null && request.auth.uid == uid;
+      allow list, create, update, delete: if false;
+    }
+
+    // ---------- Dönemler ----------
+    function validTerm() {
+      let d = request.resource.data;
+      return d.keys().hasOnly(['title', 'order', 'createdAt'])
+        && d.keys().hasAll(['title', 'order', 'createdAt'])
+        && text(d.title, 80)
+        && d.order is number
+        && d.createdAt is timestamp;
+    }
+
+    match /terms/{termId} {
+      allow read: if true;
+      allow create, update: if isAdmin() && validTerm();
+      allow delete: if isAdmin();
+    }
+
+    // ---------- Bloklar (hafta ve rapor) ----------
+    function validBlock() {
+      let d = request.resource.data;
+      return d.keys().hasOnly(['termId', 'type', 'title', 'order', 'text', 'createdAt'])
+        && d.keys().hasAll(['termId', 'type', 'title', 'order', 'createdAt'])
+        && d.termId is string
+        && d.type in ['week', 'report']
+        && text(d.title, 80)
+        && d.order is number
+        && d.createdAt is timestamp
+        && (d.type == 'report' ? ('text' in d && optionalText(d.text, 20000)) : !('text' in d))
+        // Dönem aynı toplu yazımda oluşturulmuş olabilir: yazımdan SONRAKİ duruma bakılır.
+        && existsAfter(/databases/$(database)/documents/terms/$(d.termId));
+    }
+
+    match /blocks/{blockId} {
+      allow read: if true;
+      allow create: if isAdmin() && validBlock();
+      // Bir bloğun dönemi ve türü sonradan değiştirilemez.
+      allow update: if isAdmin() && validBlock()
+        && request.resource.data.termId == resource.data.termId
+        && request.resource.data.type == resource.data.type;
+      allow delete: if isAdmin();
+    }
+
+    // ---------- Notlar ----------
+    function validNewNote() {
+      let d = request.resource.data;
+      let block = get(/databases/$(database)/documents/blocks/$(d.blockId));
+      return d.keys().hasOnly(['termId', 'blockId', 'col', 'text', 'author', 'ts', 'commentCount'])
+        && d.keys().hasAll(['termId', 'blockId', 'col', 'text', 'author', 'ts', 'commentCount'])
+        && d.termId is string
+        && d.blockId is string
+        && d.col in ['sorular', 'dusunceler', 'cikarimlar']
+        && text(d.text, 5000)
+        && optionalText(d.author, 40)
+        && d.ts == request.time                       // zaman damgası sunucudan gelir, istemci uyduramaz
+        && d.commentCount == 0
+        // Not gerçekten var olan bir haftaya ve doğru döneme bağlı olmalı.
+        && block.data.type == 'week'
+        && block.data.termId == d.termId;
+    }
+
+    // Notta yalnızca yorum sayısı değişebilir: herkes +1 yapabilir (yorum eklerken),
+    // yalnızca düzenleyici -1 yapabilir (yorum silerken).
+    function validCountChange() {
+      let d = request.resource.data;
+      let before = resource.data.commentCount;
+      return d.diff(resource.data).affectedKeys().hasOnly(['commentCount'])
+        && d.commentCount is int
+        && (d.commentCount == before + 1
+            || (isAdmin() && d.commentCount == before - 1 && d.commentCount >= 0));
+    }
+
+    match /notes/{noteId} {
+      allow read: if true;
+      allow create: if validNewNote();
+      allow update: if validCountChange();
+      allow delete: if isAdmin();
+
+      // ---------- Yorumlar ----------
+      function validNewComment() {
+        let d = request.resource.data;
+        let notePath = /databases/$(database)/documents/notes/$(noteId);
+        return d.keys().hasOnly(['text', 'author', 'ts'])
+          && d.keys().hasAll(['text', 'author', 'ts'])
+          && text(d.text, 1000)
+          && optionalText(d.author, 40)
+          && d.ts == request.time
+          // Yorum, aynı toplu yazımda notun yorum sayısını tam 1 artırmalı.
+          && getAfter(notePath).data.commentCount == get(notePath).data.commentCount + 1;
+      }
+
+      match /comments/{commentId} {
+        allow read: if true;
+        allow create: if validNewComment();
+        allow update: if false;
+        allow delete: if isAdmin();
+      }
+    }
+
+    // Başka hiçbir yola erişim yok (varsayılan: reddet).
+  }
+}

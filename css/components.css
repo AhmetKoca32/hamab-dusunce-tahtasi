@@ -1,5 +1,11 @@
 /* Bileşenler: düğme, dönem seçici, hafta, not, rapor, form alanları, yan panel, pencere. */
 
+/* ---------- Şeritler (yerel mod uyarısı, hata) ---------- */
+.banner { background: var(--tonal); border-bottom: 1px solid var(--line); padding-block: var(--s-2); font-size: 14px; color: var(--ink-2); }
+.banner .wrap { display: flex; align-items: center; justify-content: space-between; gap: var(--s-4); }
+.banner--error { background: var(--accent-soft); color: var(--accent); }
+.banner--error .link-btn { flex: none; }
+
 /* ---------- Düğmeler: iki stil, tek yükseklik ---------- */
 .btn { display: inline-flex; align-items: center; justify-content: center; gap: var(--s-2); min-height: 44px; padding: 0 var(--s-5); border-radius: var(--r-sm); border: 1px solid transparent; font-weight: 500; font-size: 16px; line-height: 1; transition: background-color .18s var(--ease), transform .12s var(--ease); }
 .btn:active { transform: translateY(1px); }

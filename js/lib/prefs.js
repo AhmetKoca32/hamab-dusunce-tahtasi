@@ -1,5 +1,5 @@
 // Yalnızca bu cihaza ait küçük tercihler (veri değil): son kullanılan isim.
-import { safeStorage } from '../store.js';
+import { safeStorage } from './storage.js';
 
 const AUTHOR_KEY = 'hamabAuthor';
 const storage = safeStorage();
