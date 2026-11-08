@@ -1,0 +1,34 @@
+/* Tasarım token'ları: renk, tipografi, aralık ve yarıçap ölçekleri.
+   Başka hiçbir dosya ham renk ya da piksel değeri "icat etmez", buradakileri kullanır.
+   Karanlık mod ileride yalnızca bu dosyadaki renk bloğunun yeniden tanımlanmasıyla eklenebilir. */
+:root {
+    /* Renk */
+    --paper: #f4f1ea;       /* sayfa zemini */
+    --surface: #fcfaf6;     /* kartlar */
+    --tonal: #ebe4d8;       /* ikincil düğme zemini */
+    --ink: #2f2822;         /* ana metin (saf siyah değil) */
+    --ink-2: #5c4d42;       /* birincil düğme */
+    --ink-2-hover: #463a31;
+    --muted: #6f6357;       /* etiket, tarih, yan bilgi (zeminde 5:1) */
+    --line: rgba(47, 40, 34, .14);
+    --line-strong: rgba(47, 40, 34, .28);
+    --accent: #b4472a;      /* tek vurgu: rapor, rozet, odak halkası */
+    --accent-soft: #f4e3dc;
+
+    /* Tipografi */
+    --serif: "Fraunces", "Newsreader", "Iowan Old Style", "Charter", "Georgia", serif;
+    --sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+
+    /* Aralık ölçeği */
+    --s-1: 4px; --s-2: 8px; --s-3: 12px; --s-4: 16px; --s-5: 24px; --s-6: 32px; --s-7: 48px; --s-8: 64px; --s-9: 96px;
+
+    /* Yarıçap ölçeği */
+    --r-sm: 8px; --r-md: 12px; --r-lg: 16px;
+
+    /* Sayfa kenar boşluğu */
+    --gut: 16px;
+
+    --ease: cubic-bezier(.2, .7, .2, 1);
+}
+@media (min-width: 640px)  { :root { --gut: 24px; } }
+@media (min-width: 1024px) { :root { --gut: 40px; } }

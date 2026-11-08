@@ -1,0 +1,14 @@
+{
+  "name": "hamab-dusunce-tahtasi",
+  "version": "0.1.0",
+  "description": "Hamab Kuramsal Düşünce Tahtası: halk müziği ekibinin haftalık okuma notları.",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "start": "python3 -m http.server 8765 --bind 127.0.0.1",
+    "test": "node --test"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}

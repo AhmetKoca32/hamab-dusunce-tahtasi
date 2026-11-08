@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+    <meta name="theme-color" content="#f4f1ea">
+    <title>Hamab Kuramsal Düşünce Tahtası</title>
+    <meta name="description" content="Halk müziği ekibinin haftalık okuma notları, soruları ve çıkarımları. Herkes not ekleyip yorum yazabilir.">
+    <meta property="og:type" content="website">
+    <meta property="og:title" content="Hamab Kuramsal Düşünce Tahtası">
+    <meta property="og:description" content="Halk müziği ekibinin haftalık okuma notları, soruları ve çıkarımları.">
+    <meta name="twitter:card" content="summary">
+    <link rel="icon" href="assets/logo.png" type="image/png">
+    <link rel="stylesheet" href="css/tokens.css">
+    <link rel="stylesheet" href="css/base.css">
+    <link rel="stylesheet" href="css/components.css">
+    <script type="module" src="js/main.js"></script>
+</head>
+<body>
+<a class="skip-link" href="#top">İçeriğe geç</a>
+
+<header class="site-header">
+    <div class="wrap">
+        <div class="brand" id="brand">
+            <!-- assets/logo.png yoksa görsel otomatik gizlenir -->
+            <img id="logo" src="assets/logo.png" alt="" onerror="this.remove()">
+            <h1>Hamab Kuramsal Düşünce Tahtası</h1>
+        </div>
+    </div>
+</header>
+
+<div class="edit-bar" id="editBar" hidden>
+    <div class="wrap">
+        <span><strong>Düzenleme modu açık.</strong> <span class="muted">Başlıkları, dönemleri ve raporları değiştirebilir, not silebilirsin.</span></span>
+        <button class="btn btn--tonal btn--sm" id="logoutBtn" type="button">Çıkış yap</button>
+    </div>
+</div>
+
+<main id="top" tabindex="-1" class="wrap">
+    <div class="terms" id="terms" role="tablist" aria-label="Dönemler"></div>
+    <div class="term-tools" id="termTools"></div>
+    <div class="board" id="board"></div>
+</main>
+
+<!-- Yorum paneli -->
+<div class="scrim" id="scrim"></div>
+<aside class="drawer" id="drawer" role="dialog" aria-modal="true" aria-labelledby="drawerTitle" aria-hidden="true">
+    <div class="drawer-head">
+        <div>
+            <p class="drawer-ctx" id="drawerCtx"></p>
+            <h2 id="drawerTitle">Not ve yorumlar</h2>
+        </div>
+        <button class="icon-btn" id="drawerClose" type="button" aria-label="Kapat">
+            <svg viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M3 3l12 12M15 3L3 15"/></svg>
+        </button>
+    </div>
+    <div class="drawer-body" id="drawerBody"></div>
+    <form class="drawer-form" id="commentForm">
+        <label class="field-label" for="commentAuthor">İsim (isteğe bağlı)</label>
+        <input type="text" id="commentAuthor" maxlength="40" autocomplete="name">
+        <label class="field-label" for="commentInput">Yorumun</label>
+        <div class="row">
+            <input type="text" id="commentInput" maxlength="1000" autocomplete="off">
+            <button class="btn btn--primary" type="submit">Gönder</button>
+        </div>
+    </form>
+</aside>
+
+<!-- Küçük pencere: yeniden adlandırma, rapor, giriş -->
+<div class="dialog-wrap" id="dialogWrap">
+    <form class="dialog" id="dialog" role="dialog" aria-modal="true" aria-labelledby="dialogTitle" novalidate>
+        <h2 id="dialogTitle"></h2>
+        <div class="field"><label class="field-label" id="dialogLabel" for="dialogField"></label><div id="dialogFieldHolder"></div></div>
+        <div class="field" id="dialogAuthorHolder">
+            <label class="field-label" for="dialogAuthor">İsim (isteğe bağlı)</label>
+            <input type="text" id="dialogAuthor" maxlength="40">
+        </div>
+        <div class="error-text" id="dialogError" role="alert"></div>
+        <div class="actions">
+            <button class="btn btn--tonal" id="dialogCancel" type="button">Vazgeç</button>
+            <button class="btn btn--primary" id="dialogOk" type="submit">Kaydet</button>
+        </div>
+    </form>
+</div>
+</body>
+</html>

@@ -1,0 +1,32 @@
+/* Sıfırlama, sayfa iskeleti, üst bölüm ve erişilebilirlik temelleri. */
+
+*, *::before, *::after { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; }
+body { margin: 0; background: var(--paper); color: var(--ink); font: 400 16px/1.6 var(--sans); -webkit-font-smoothing: antialiased; }
+button, input, textarea { font: inherit; color: inherit; }
+button { cursor: pointer; -webkit-tap-highlight-color: transparent; touch-action: manipulation; }
+h1, h2, h3, p { margin: 0; }
+[hidden] { display: none !important; }
+
+.wrap { max-width: 1120px; margin: 0 auto; padding-inline: var(--gut); }
+.muted { color: var(--muted); }
+
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 4px; }
+
+.skip-link { position: absolute; left: var(--gut); top: var(--s-2); transform: translateY(-200%); background: var(--ink); color: #fff; padding: var(--s-3) var(--s-4); border-radius: var(--r-sm); z-index: 100; text-decoration: none; }
+.skip-link:focus { transform: none; }
+
+/* ---------- Üst bölüm ---------- */
+.site-header { padding-block: var(--s-6) var(--s-5); border-bottom: 1px solid var(--line); }
+.brand { display: flex; align-items: center; gap: var(--s-4); user-select: none; -webkit-user-select: none; }
+.brand img { height: 64px; width: 64px; object-fit: contain; mix-blend-mode: multiply; flex: none; -webkit-user-drag: none; }
+.brand h1 { font-family: var(--serif); font-weight: 600; font-size: clamp(26px, 4.4vw, 44px); line-height: 1.1; letter-spacing: -.02em; color: var(--ink); text-wrap: balance; }
+
+/* Düzenleme şeridi (yalnızca düzenleyici girişi yapılınca görünür) */
+.edit-bar { background: var(--accent-soft); border-bottom: 1px solid var(--line); padding-block: var(--s-3); font-size: 14px; }
+.edit-bar .wrap { display: flex; align-items: center; justify-content: space-between; gap: var(--s-4); }
+.edit-bar strong { font-weight: 600; color: var(--accent); }
+
+@media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after { transition-duration: .01ms !important; transition-delay: 0s !important; }
+}
