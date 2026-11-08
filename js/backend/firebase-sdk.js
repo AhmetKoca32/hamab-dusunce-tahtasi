@@ -7,7 +7,7 @@ export { initializeAppCheck, ReCaptchaV3Provider } from 'https://www.gstatic.com
 
 export {
     getFirestore, initializeFirestore, persistentLocalCache, persistentMultipleTabManager,
-    collection, doc, query, where, orderBy, onSnapshot, getDoc, getDocs,
+    collection, doc, query, where, orderBy, onSnapshot, getDoc, getDocFromServer, getDocs,
     setDoc, updateDoc, writeBatch, serverTimestamp, increment
 } from 'https://www.gstatic.com/firebasejs/11.10.0/firebase-firestore.js';
 
