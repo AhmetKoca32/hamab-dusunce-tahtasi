@@ -26,6 +26,7 @@ h1, h2, h3, p { margin: 0; }
 .edit-bar { background: var(--accent-soft); border-bottom: 1px solid var(--line); padding-block: var(--s-3); font-size: 14px; }
 .edit-bar .wrap { display: flex; align-items: center; justify-content: space-between; gap: var(--s-4); }
 .edit-bar strong { font-weight: 600; color: var(--accent); }
+.edit-bar .btn { flex: none; white-space: nowrap; }
 
 @media (prefers-reduced-motion: reduce) {
     *, *::before, *::after { transition-duration: .01ms !important; transition-delay: 0s !important; }
