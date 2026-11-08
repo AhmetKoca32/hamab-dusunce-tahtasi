@@ -35,7 +35,7 @@ npm test
 
 ## Düzenleyici girişi
 
-Sayfanın üstündeki **logoya (ya da başlığa) 1,5 saniye içinde 3 kez tıkla**, giriş penceresi açılır.
+Sayfanın üstündeki **logoyu (ya da başlığı) 1 saniye basılı tut**, giriş penceresi açılır.
 Giriş yapılmamışsa sayfada düzenleme ile ilgili hiçbir şey görünmez.
 
 - **Firebase modunda:** yalnızca şifre. Tek, paylaşılan bir düzenleyici hesabı vardır (e-postası
@@ -59,7 +59,7 @@ js/
   domain.js             Saf mantık ve veri şeması (DOM yok, test edilir)
   firebase-config.js    Firebase web yapılandırması (null = yerel mod)
   actions.js            Düzenleyici akışları: pencere aç, onay al, depoya yaz
-  gate.js               Gizli giriş (logoya 3 tık)
+  gate.js               Gizli giriş (logoyu basılı tutma)
   backend/
     index.js            Arka ucu seçer (Firebase / yerel / hata yedeği)
     firebase-store.js   Firestore deposu       firebase-auth.js   Firebase girişi

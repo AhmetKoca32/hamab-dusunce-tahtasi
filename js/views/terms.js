@@ -16,8 +16,11 @@ export function renderTerms() {
     $('terms').replaceChildren(...tabs);
     $('terms').hidden = tabs.length === 0;
 
-    $('termTools').replaceChildren(...(editing && current ? [
-        h('button', { class: 'btn btn--tonal btn--sm', type: 'button', onclick: () => renameTerm(current) }, 'Dönemi yeniden adlandır'),
-        terms.length > 1 ? h('button', { class: 'btn btn--danger btn--sm', type: 'button', onclick: () => deleteTerm(current) }, 'Dönemi sil') : null
-    ] : []));
+    // Not: replaceChildren(null) "null" metni yazar; bu yüzden olmayan düğme diziye hiç eklenmez.
+    const tools = [];
+    if (editing && current) {
+        tools.push(h('button', { class: 'btn btn--tonal btn--sm', type: 'button', onclick: () => renameTerm(current) }, 'Dönemi yeniden adlandır'));
+        if (terms.length > 1) tools.push(h('button', { class: 'btn btn--danger btn--sm', type: 'button', onclick: () => deleteTerm(current) }, 'Dönemi sil'));
+    }
+    $('termTools').replaceChildren(...tools);
 }

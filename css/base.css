@@ -18,8 +18,8 @@ h1, h2, h3, p { margin: 0; }
 
 /* ---------- Üst bölüm ---------- */
 .site-header { padding-block: var(--s-6) var(--s-5); border-bottom: 1px solid var(--line); }
-.brand { display: flex; align-items: center; gap: var(--s-4); user-select: none; -webkit-user-select: none; }
-.brand img { height: 64px; width: 64px; object-fit: contain; mix-blend-mode: multiply; flex: none; -webkit-user-drag: none; }
+.brand { display: flex; align-items: center; gap: var(--s-4); user-select: none; -webkit-user-select: none; -webkit-touch-callout: none; }
+.brand img { height: 64px; width: 64px; object-fit: contain; mix-blend-mode: multiply; flex: none; -webkit-user-drag: none; pointer-events: none; }
 .brand h1 { font-family: var(--serif); font-weight: 600; font-size: clamp(26px, 4.4vw, 44px); line-height: 1.1; letter-spacing: -.02em; color: var(--ink); text-wrap: balance; }
 
 /* Düzenleme şeridi (yalnızca düzenleyici girişi yapılınca görünür) */

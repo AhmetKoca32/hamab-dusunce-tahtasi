@@ -85,7 +85,7 @@ e-posta bağlantılı akışlar (şifre sıfırlama bağlantısı, e-posta bağl
 
 ## 8. İlk dönem
 
-Siteyi aç, logoya 3 kez tıkla, şifreyle giriş yap. **+ Dönem ekle** ile ilk dönemi oluştur
+Siteyi aç, logoyu 1 saniye basılı tut, şifreyle giriş yap. **+ Dönem ekle** ile ilk dönemi oluştur
 (her dönem 12 haftayla gelir). Veritabanı boşken siteyi ziyaret edenler "Henüz içerik eklenmemiş" görür.
 
 ## 9. Doğrulama kontrol listesi
