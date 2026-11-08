@@ -50,7 +50,8 @@ Düzenleyici; dönemleri, hafta başlıklarını ve raporları değiştirebilir,
 
 ```
 index.html              İskelet: yalnızca yapı ve bağlantılar
-assets/                 Logo (ileride fontlar)
+assets/                 logo.webp (192 px, ~5 KB), favicon.png (64 px). Orijinal 640 px PNG git geçmişinde:
+                        `git show 3d69a95:assets/logo.png > logo-orijinal.png` (ileride fontlar da buraya)
 css/                    tokens.css (ölçekler), base.css (iskelet), components.css (bileşenler)
 js/
   main.js               Giriş noktası: parçaları bağlar, odak koruyarak yeniden çizer
