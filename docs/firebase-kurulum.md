@@ -10,8 +10,8 @@ Kod hazır; aşağıdaki adımlar Firebase tarafını hazırlar. `js/firebase-co
 
 Proje: **`hamab-dusunce-tahtasi`**. 1., 2., 3. ve 6. adımlar Firebase CLI ile yapıldı (proje, web uygulaması,
 Firestore `europe-west1`, güvenlik kuralları). 4. adımda E-posta/Şifre etkin ve kayıt olma kapalı.
-**Elle yapılması gerekenler:** 4. adımda düzenleyici kullanıcıyı eklemek, 5. adımdaki `admins` belgesi ve 7. adım
-(Authorized domains, Vercel adresi belli olunca).
+Düzenleyici kullanıcı (4. adım) ve `admins` belgesi (5. adım) eklendi. Site Vercel'de yayında
+(`https://hamab-dusunce-tahtasi.vercel.app`) ve canlıda uçtan uca denendi. 7. adım (Authorized domains) gerekmedi.
 
 ## Giriş modeli
 
@@ -75,10 +75,13 @@ npx firebase-tools deploy --only firestore:rules --project <proje-kimliği>
 (Firebase CLI kuruluysa `firebase deploy --only firestore:rules --project <proje-kimliği>`.) Kurallar
 `firestore.rules` dosyasındadır. Konsolda **Firestore → Kurallar** sekmesine yapıştırmak da olur.
 
-## 7. Yetkili alanlar
+## 7. Yetkili alanlar (şu an gerekli değil)
 
-**Authentication → Settings → Authorized domains**: Vercel adresini ekle
-(`hamab-dusunce-tahtasi.vercel.app`, varsa özel alan adı). `localhost` varsayılan olarak ekli.
+**Authentication → Settings → Authorized domains** listesi, OAuth pencereli girişler (Google ile giriş vb.) ve
+e-posta bağlantılı akışlar (şifre sıfırlama bağlantısı, e-posta bağlantısıyla giriş) için geçerlidir. Bu site yalnızca
+**e-posta/şifre ile `signInWithEmailAndPassword`** kullandığı için canlı adreste bu listeye ekleme yapılmadan giriş
+çalışıyor (denendi). İleride Google ile giriş ya da şifre sıfırlama bağlantısı eklenirse Vercel adresini
+(`hamab-dusunce-tahtasi.vercel.app`, varsa özel alan adı) buraya ekle. `localhost` varsayılan olarak ekli.
 
 ## 8. İlk dönem
 

@@ -110,8 +110,12 @@ Statik site, derleme adımı yok:
 - Build Command: boş bırak
 - Output Directory: boş bırak (kök dizin)
 
-Proje adı repo adını izler: `hamab-dusunce-tahtasi` → `hamab-dusunce-tahtasi.vercel.app`. Yayından sonra bu
-alanı Firebase'de **Authorized domains** listesine ekle ([kurulum, adım 7](docs/firebase-kurulum.md)).
+**Canlı adres: https://hamab-dusunce-tahtasi.vercel.app** (proje adı repo adını izler). Vercel projesi bu GitHub
+deposuna bağlıdır: `main`'e yapılan her `git push` otomatik olarak yeniden yayınlanır (yaklaşık birkaç saniye).
+
+Firebase'in **Authorized domains** listesine adres eklemek gerekmez: yalnızca e-posta/şifre girişi kullanıyoruz ve
+canlı adreste Authorized domains'e eklemeden denendi, çalışıyor. O liste OAuth penceresi (Google ile giriş vb.) ve
+e-posta bağlantılı akışlar içindir ([kurulum, adım 7](docs/firebase-kurulum.md)).
 
 ## Kota ve kötüye kullanım koruması
 
